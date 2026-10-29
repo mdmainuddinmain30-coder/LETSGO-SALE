@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>LET'S GO | Shop Account</title>
+
+<!-- ফায়ারবেস SDK স্ক্রিপ্ট যুক্ত করা হলো -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+<style>
+:root{--blue:#083d70;--blue2:#1479c9;--pale:#eaf4ff;--ink:#132238;--line:#d5e2ef}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,"Noto Sans Bengali",sans-serif;color:var(--ink);background:linear-gradient(135deg,#cfe6ff,#f5faff 55%,#d7eaff);min-height:100vh;-webkit-text-size-adjust:100%;}
+
+/* হেডার এবং লোগো পুরো হেডার জুড়ে সেট করার জন্য স্টাইল */
+header{text-align:center;padding:0;width:100%;background:#000;box-shadow:0 4px 18px #00336622;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.brand-logo {width:100%;height:140px;object-fit:cover;display:block;}
+
+main{max-width:1000px;margin:22px auto;padding:0 14px 32px}
+.card{background:#fff;border:1px solid #d5e5f5;border-radius:18px;padding:20px;margin:14px 0;box-shadow:0 8px 26px #0a477b12}
+button{border:0;border-radius:10px;background:var(--blue2);color:#fff;padding:12px 18px;font-weight:700;cursor:pointer;font-size:16px;}
+button.secondary{background:#e7f1fc;color:#164c80;border:1px solid #c6ddf3}
+button.danger{background:#b42318}
+
+/* মোবাইলে বক্সে ক্লিক করলে জুম ইন সমস্যা সমাধানের জন্য ফন্ট সাইজ কমপক্ষে 16px রাখা হয়েছে */
+input{font:inherit;font-size:16px!important;border:1px solid #cbd9e8;border-radius:9px;padding:12px;width:100%;background:#fff;color:var(--ink)}
+label{display:block;font-size:14px;font-weight:700;margin:0 0 6px}
+
+.hidden{display:none!important}
+.center{text-align:center}
+.muted{color:#5b6f85;font-size:14px}
+.actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+.topbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.title{margin:0 0 12px;color:#0b4f91}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th,td{border-bottom:1px solid var(--line);padding:10px 8px;text-align:left}
+th{background:#edf6ff;font-size:14px}
+td input{min-width:100px;padding:9px;}
+.tablewrap{overflow-x:auto}
+
+.totals{display:grid;grid-template-columns:repeat(2, 1fr);gap:12px;margin-top:15px}
+.pill{background:#edf6ff;border:1px solid #d4e8fb;padding:12px 14px;border-radius:12px;text-align:center}
+.pill span{display:block;font-size:13px;color:#5b6f85;font-weight:bold;}
+.pill b{display:block;font-size:19px;margin-top:5px;color:#083d70}
+
+.notice{font-size:13px;color:#4c6178;line-height:1.5}
+.footer{text-align:center;font-size:12px;color:#647b91;margin-top:22px}
+
+@media(max-width:650px){
+  .card{padding:15px}
+  .row{grid-template-columns:1fr}
+  th,td{font-size:13px}
+  .totals{grid-template-columns:1fr;}
+  .brand-logo {height: 100px;}
+}
+</style>
+</head>
+<body>
+<header>
+  <!-- লোগোর ফাইল নেম logo/logo lets.jpeg সেট করা হয়েছে -->
+  <img src="logo/logo lets.jpeg" alt="LET'S GO Logo" class="brand-logo" onerror="this.style.display='none';">
+</header>
+<main>
+<section id="login" class="card center">
+  <h2 class="title">Password</h2>
+  <div style="max-width:380px;margin:auto">
+    <label for="passwordInput"></label>
+    <input id="passwordInput" type="password" placeholder="পাসওয়ার্ড লিখুন" autocomplete="current-password">
+    <div class="actions" style="justify-content:center;margin-top:14px"><button id="loginBtn">Enter</button></div>
+    <p id="loginError" class="notice" style="color:#b42318"></p>
+  </div>
+</section>
+
+<section id="home" class="card hidden center">
+  <h2 class="title" style="font-size:28px; color:#02111e;">LETSGO</h2>
+  <div class="row" style="margin-top:18px">
+    <div><label for="accountDateInput">Select Date</label><input type="date" id="accountDateInput"></div>
+    <button id="createOpenBtn">Create / Open Page</button>
+  </div>
+
+  <hr style="border:0; border-top:1px solid #e0e9f2; margin:25px 0 15px 0;">
+
+  <!-- ৪টি টোটাল হিসাবের কার্ড -->
+  <div class="totals">
+    <div class="pill">
+      <span>Total Sale</span>
+      <b id="grandTotalSales">৳0</b>
+    </div>
+    <div class="pill">
+      <span>Total Due</span>
+      <b id="grandTotalDue" style="color:#b42318;">৳0</b>
+    </div>
+    <div class="pill">
+      <span>Running Month Total Sale</span>
+      <b id="currentMonthSales">৳0</b>
+    </div>
+    <div class="pill">
+      <span>Running Month Total Due</span>
+      <b id="currentMonthDue" style="color:#b42318;">৳0</b>
+    </div>
+  </div>
+</section>
+
+<section id="account" class="hidden">
+  <div class="card">
+    <div class="topbar">
+      <div><h2 class="title">Sales Page</h2><div id="activeDate" class="muted"></div></div>
+      <button id="homeBtn" class="secondary">Home</button>
+    </div>
+    <p class="notice">পণ্যের নাম, বিক্রির দাম ও লাভ লিখুন। প্রতিটি পরিবর্তন স্বয়ংক্রিয়ভাবে সেভ হবে[cite: 1]。</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>নং</th><th>Product Name</th><th>Sale Price (৳)</th><th>Profit (৳)</th><th>Action</th></tr></thead>
+        <tbody id="salesRows"></tbody>
+      </table>
+    </div>
+    <div class="actions" style="margin-top:12px"><button id="addSale">+ Add Product</button></div>
+    <div class="totals" style="grid-template-columns: repeat(2, 1fr); margin-top: 15px;">
+      <div class="pill"><span>আজকের মোট বিক্রি</span><b id="totalSales">৳0</b></div>
+      <div class="pill"><span>আজকের মোট লাভ</span><b id="totalProfit">৳0</b></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="title">Due Page — বাকি হিসাব</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>নং</th><th>Customer Name</th><th>বাকি (৳)</th><th>নোট</th><th>Action</th></tr></thead>
+        <tbody id="dueRows"></tbody>
+      </table>
+    </div>
+    <div class="actions" style="margin-top:12px"><button id="addDue">+ Add Due</button></div>
+    <div class="totals" style="grid-template-columns: 1fr; margin-top: 15px;">
+      <div class="pill"><span>আজকের মোট বাকি</span><b id="totalDue">৳0</b></div>
+    </div>
+    <p class="notice" style="margin-top: 10px;">কেউ বাকি টাকা পরিশোধ করলে তার এন্ট্রির Delete বাটনে চাপ দিয়ে ওই বাকি এন্ট্রি মুছে দিতে পারবেন[cite: 1]。</p>
+  </div>
+  
+  <div class="card">
+    <div class="actions" style="justify-content: space-between;">
+      <button id="closeDay" class="danger">Close Page</button>
+      <span id="saveStatus" class="notice">অটো-সেভ চালু</span>
+    </div>
+  </div>
+</section>
+
+<div class="footer">LETSGO</div>
+</main>
+
+<script>
+// --- ফায়ারবেস কনফিগারেশন সেটআপ ---
+const firebaseConfig = {
+  apiKey: "AIzaSyA_5Yg1VOa4aUpcpt5TZifa4vI6O6P0hIo",
+  authDomain: "letsgo-seal.firebaseapp.com",
+  projectId: "letsgo-seal",
+  storageBucket: "letsgo-seal.firebasestorage.app",
+  messagingSenderId: "659151675333",
+  appId: "1:659151675333:web:259cd19060f742aff2f5ac"
+};
+
+// ফায়ারবেস ইনিশিয়ালাইজেশন
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const PASSWORD = "Main150"; // পাসওয়ার্ড পরিবর্তন করতে পারেন[cite: 1]
+const $ = id => document.getElementById(id);
+
+const localDate = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+};
+
+const dateLabel = s => {
+  if(!s) return "";
+  const [y,m,d] = s.split("-").map(Number);
+  return new Date(y,m-1,d).toLocaleDateString("bn-BD",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+};
+
+let currentDate = localDate(), accounts = {};
+let isTyping = false; // টাইপিং চলাকালীন পেজ রেন্ডার লক রাখার ফ্ল্যাগ
+
+// ফায়ারবেস থেকে রিয়েল-টাইমে ডাটা লোড করার ফাংশন
+function loadDataFromFirebase() {
+  db.collection("shopData").doc("accountsDoc").onSnapshot((doc) => {
+    // ব্যবহারকারী যদি নিজে টাইপ করে থাকেন, তবে ফায়ারবেস থেকে ডাটা এসে পেজ রিনিত হবে না
+    if (isTyping) return;
+
+    if (doc.exists) {
+      accounts = doc.data().data || {};
+    } else {
+      accounts = {};
+    }
+    calculateGlobalTotals();
+    if(!$("account").classList.contains("hidden")) {
+      render();
+    }
+    $("saveStatus").textContent = "✓ ফায়ারবেস সিঙ্কড";
+  }, (error) => {
+    console.error("Error loading data: ", error);
+    $("saveStatus").textContent = "⚠ সিঙ্ক ব্যর্থ হয়েছে";
+  });
+}
+
+// ফায়ারবেসে ডাটা সেভ করার ফাংশন (ডিবাউন্স সহ)
+let saveTimeout;
+function save() {
+  $("saveStatus").textContent = "সেভ হচ্ছে...";
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    db.collection("shopData").doc("accountsDoc").set({
+      data: accounts
+    })
+    .then(() => {
+      $("saveStatus").textContent = "✓ ফায়ারবেসে সেভ হয়েছে";
+      calculateGlobalTotals();
+      isTyping = false; // সেভ হওয়া শেষ হলে লক খুলে যাবে
+    })
+    .catch((error) => {
+      console.error("Error saving data: ", error);
+      $("saveStatus").textContent = "⚠ সেভ করতে সমস্যা হয়েছে";
+      isTyping = false;
+    });
+  }, 800); // ৮০০ মিলি সেকেন্ড পর ব্যাকগ্রাউন্ডে ফায়ারবেসে সেভ হবে
+}
+
+function ensure(d) {
+  if(!accounts[d]) accounts[d] = {sales:[], dues:[], closed:false};
+  if(!accounts[d].sales) accounts[d].sales = [];
+  if(!accounts[d].dues) accounts[d].dues = [];
+  return accounts[d];
+}
+
+function show(id) {
+  ["login","home","account"].forEach(x => $(x).classList.toggle("hidden", x !== id));
+  if(id === "home") calculateGlobalTotals();
+}
+
+function money(n) {
+  return "৳" + (Number(n) || 0).toLocaleString("en-US", {maximumFractionDigits:2});
+}
+
+function safe(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function calculateGlobalTotals() {
+  let grandSales = 0;
+  let grandDue = 0;
+  let currentMonthSales = 0;
+  let currentMonthDue = 0;
+
+  const now = new Date();
+  const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  Object.keys(accounts).forEach(dateKey => {
+    const dayData = accounts[dateKey];
+    if(dayData.sales) {
+      dayData.sales.forEach(s => {
+        const val = Number(s.price) || 0;
+        grandSales += val;
+        if(dateKey.startsWith(currentYearMonth)) {
+          currentMonthSales += val;
+        }
+      });
+    }
+    if(dayData.dues) {
+      dayData.dues.forEach(d => {
+        const val = Number(d.amount) || 0;
+        grandDue += val;
+        if(dateKey.startsWith(currentYearMonth)) {
+          currentMonthDue += val;
+        }
+      });
+    }
+  });
+
+  $("grandTotalSales").textContent = money(grandSales);
+  $("grandTotalDue").textContent = money(grandDue);
+  $("currentMonthSales").textContent = money(currentMonthSales);
+  $("currentMonthDue").textContent = money(currentMonthDue);
+}
+
+function drawRows(type) {
+  const a = ensure(currentDate), arr = type === "sales" ? a.sales : a.dues, tb = $(type === "sales" ? "salesRows" : "dueRows");
+  tb.innerHTML = "";
+  if(!arr.length) arr.push(type === "sales" ? {name:"",price:"",profit:""} : {name:"",amount:"",note:""});
+  
+  arr.forEach((r,i) => {
+    const fields = type === "sales" ? ["name","price","profit"] : ["name","amount","note"];
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${i+1}</td>` + 
+      fields.map(f => `<td><input data-type="${type}" data-index="${i}" data-field="${f}" value="${safe(r[f])}" placeholder="${type==="sales"?(f==="name"?"পণ্যের নাম":f==="price"?"বিক্রির দাম":"লাভ"):(f==="name"?"ক্রেতার নাম":f==="amount"?"বাকি টাকা":"নোট")}"></td>`).join("") + 
+      `<td><button class="secondary" data-remove="${type}" data-index="${i}">Delete</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function totals() {
+  const a = ensure(currentDate);
+  $("totalSales").textContent = money(a.sales.reduce((s,x) => s + (Number(x.price) || 0), 0));
+  $("totalProfit").textContent = money(a.sales.reduce((s,x) => s + (Number(x.profit) || 0), 0));
+  $("totalDue").textContent = money(a.dues.reduce((s,x) => s + (Number(x.amount) || 0), 0));
+}
+
+function render() {
+  const a = ensure(currentDate);
+  $("activeDate").textContent = dateLabel(currentDate);
+  drawRows("sales");
+  drawRows("dues");
+  totals();
+}
+
+function openSelected() {
+  const d = $("accountDateInput").value;
+  if(!d) { alert("একটি তারিখ নির্বাচন করুন[cite: 1]。"); return; }
+  currentDate = d;
+  ensure(d);
+  save();
+  render();
+  show("account");
+}
+
+$("loginBtn").onclick = () => {
+  if($("passwordInput").value === PASSWORD) {
+    $("loginError").textContent = "";
+    $("accountDateInput").value = localDate();
+    show("home");
+  } else {
+    $("loginError").textContent = "পাসওয়ার্ড সঠিক নয়[cite: 1]。";
+    $("passwordInput").value = "";
+  }
+};
+
+$("passwordInput").addEventListener("keydown", e => { if(e.key === "Enter") $("loginBtn").click(); });
+$("createOpenBtn").onclick = openSelected;
+$("homeBtn").onclick = () => { $("accountDateInput").value = localDate(); show("home"); };
+$("addSale").onclick = () => { ensure(currentDate).sales.push({name:"",price:"",profit:""}); save(); render(); };
+$("addDue").onclick = () => { ensure(currentDate).dues.push({name:"",amount:"",note:""}); save(); render(); };
+$("closeDay").onclick = () => { save(); $("accountDateInput").value = localDate(); show("home"); };
+
+// ইনপুট দেওয়ার সময় ফোকাস ধরে রাখার পারফেক্ট হ্যান্ডলার
+document.addEventListener("input", e => {
+  const el = e.target;
+  if(!el.matches("input[data-type]")) return;
+  
+  isTyping = true; // টাইপিং শুরু হওয়া মাত্র সিঙ্ক লক হয়ে যাবে
+  
+  const a = ensure(currentDate), arr = el.dataset.type === "sales" ? a.sales : a.dues;
+  const index = Number(el.dataset.index);
+  const field = el.dataset.field;
+  
+  if(arr[index]) {
+    arr[index][field] = el.value;
+    save();
+    totals();
+  }
+});
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("button[data-remove]");
+  if(!b) return;
+  isTyping = true;
+  const a = ensure(currentDate), arr = b.dataset.remove === "sales" ? a.sales : a.dues;
+  arr.splice(Number(b.dataset.index), 1);
+  save();
+  render();
+  setTimeout(() => { isTyping = false; }, 1000);
+});
+
+$("accountDateInput").value = localDate();
+
+// অ্যাপ চালু হওয়ার সাথে সাথে ফায়ারবেস থেকে ডাটা সিঙ্ক শুরু হবে
+loadDataFromFirebase();
+show("login");
+</script>
+</body>
+</html>
